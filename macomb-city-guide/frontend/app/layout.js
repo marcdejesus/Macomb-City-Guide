@@ -1,3 +1,17 @@
+/*
+1️⃣ Home Page (/)
+Features
+✅ Hero Section – Large banner with a search bar and featured city image.
+✅ Popular Attractions – Display top 3-5 attractions with images & short descriptions.
+✅ Upcoming Events – Show the next 3-5 events happening in the city.
+✅ Featured Restaurants – Highlight popular dining spots.
+✅ Navigation Links – Quick links to all sections (Attractions, Events, Restaurants, etc.).
+
+Backend Requirements
+API to fetch featured attractions, events, and restaurants.
+API to fetch city metadata (name, images, population, climate).
+*/
+
 import { Inter } from 'next/font/google'
 import "./globals.css";
 
