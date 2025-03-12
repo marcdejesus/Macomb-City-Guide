@@ -29,6 +29,11 @@ env
 /backend/db.sqlite3
 /backend/media
 /backend/staticfiles
+*.pot
+*.mo
+local_settings.py
+celerybeat-schedule
+celerybeat.pid
 
 # Testing
 /coverage
@@ -36,6 +41,9 @@ env
 /htmlcov/
 /.pytest_cache/
 .hypothesis/
+.tox/
+nosetests.xml
+coverage.xml
 
 # Environment variables
 .env
@@ -57,11 +65,25 @@ debug.log
 *.swo
 *.sublime-workspace
 *.sublime-project
+.project
+.classpath
+.settings/
+*.code-workspace
 
 # OS files
 .DS_Store
 Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
 
 # Miscellaneous
 *.log
 .cache/
+.eslintcache
+.stylelintcache
+.npm
+.history
+
+# Deployment
+backend-venv/
