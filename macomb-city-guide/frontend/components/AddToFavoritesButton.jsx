@@ -3,67 +3,65 @@
 import { useState, useEffect } from "react";
 import { Heart } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { useToast } from "@/components/ui/use-toast.js";
+import { useToast } from "@/components/ui/use-toast";
 import { useSelector, useDispatch } from "react-redux";
 import { addFavorite, removeFavorite } from "@/lib/redux/slices/favoritesSlice";
 
-export default function AddToFavoritesButton({ id, type }) {
+export default function AddToFavoritesButton({ itemId, itemType, title, image }) {
   const { toast } = useToast();
   const dispatch = useDispatch();
-  const { items: favorites, isLoading } = useSelector((state) => state.favorites);
   const { isAuthenticated } = useSelector((state) => state.auth);
+  const favorites = useSelector((state) => state.favorites.items);
   
-  // Check if this item is already a favorite
-  const isFavorite = favorites.some(
-    (item) => item.id === id && item.type === type
-  );
+  const [isFavorite, setIsFavorite] = useState(false);
   
-  const [isAdding, setIsAdding] = useState(false);
+  // Check if item is already in favorites
+  useEffect(() => {
+    if (favorites && itemId) {
+      const found = favorites.find(
+        (item) => item.id === itemId && item.type === itemType
+      );
+      setIsFavorite(!!found);
+    }
+  }, [favorites, itemId, itemType]);
   
-  const handleToggleFavorite = async () => {
+  const handleToggleFavorite = () => {
     if (!isAuthenticated) {
       toast({
         title: "Sign in required",
-        description: "Please sign in to add favorites",
+        description: "Please sign in to save favorites",
         variant: "destructive",
       });
       return;
     }
     
-    setIsAdding(true);
+    const favoriteItem = { id: itemId, type: itemType, title, image };
     
-    try {
-      if (isFavorite) {
-        dispatch(removeFavorite({ id, type }));
-        toast({
-          description: "Removed from favorites",
-        });
-      } else {
-        dispatch(addFavorite({ id, type }));
-        toast({
-          description: "Added to favorites",
-        });
-      }
-    } catch (error) {
+    if (isFavorite) {
+      dispatch(removeFavorite({ id: itemId, type: itemType }));
       toast({
-        title: "Error",
-        description: "There was a problem updating your favorites",
-        variant: "destructive",
+        title: "Removed from favorites",
+        description: `${title} has been removed from your favorites`,
       });
-    } finally {
-      setIsAdding(false);
+    } else {
+      dispatch(addFavorite(favoriteItem));
+      toast({
+        title: "Added to favorites",
+        description: `${title} has been added to your favorites`,
+      });
     }
   };
   
   return (
     <Button
       variant={isFavorite ? "default" : "outline"}
-      size="icon"
-      disabled={isAdding || isLoading}
+      className="w-full"
       onClick={handleToggleFavorite}
-      aria-label={isFavorite ? "Remove from favorites" : "Add to favorites"}
     >
-      <Heart className={`h-5 w-5 ${isFavorite ? "fill-primary-foreground" : ""}`} />
+      <Heart
+        className={`mr-2 h-4 w-4 ${isFavorite ? "fill-white" : ""}`}
+      />
+      {isFavorite ? "Saved to Favorites" : "Save to Favorites"}
     </Button>
   );
 }
