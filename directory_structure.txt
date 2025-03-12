@@ -1,0 +1,70 @@
+macomb/
+├── frontend/
+│   ├── public/
+│   │   ├── images/
+│   │   └── icons/
+│   ├── src/
+│   │   ├── app/
+│   │   │   ├── attractions/
+│   │   │   │   └── page.tsx
+│   │   │   ├── events/
+│   │   │   │   └── page.tsx
+│   │   │   ├── food-dining/
+│   │   │   │   └── page.tsx
+│   │   │   ├── real-estate/
+│   │   │   │   └── page.tsx
+│   │   │   ├── transportation/
+│   │   │   │   └── page.tsx
+│   │   │   ├── layout.tsx
+│   │   │   └── page.tsx
+│   │   ├── components/
+│   │   │   ├── Header.tsx
+│   │   │   ├── Footer.tsx
+│   │   │   └── common/
+│   │   ├── lib/
+│   │   │   └── api.ts
+│   │   └── types/
+│   │       └── index.ts
+│   ├── package.json
+│   ├── tsconfig.json
+│   └── next.config.js
+├── backend/
+│   ├── macomb_project/
+│   │   ├── __init__.py
+│   │   ├── settings.py
+│   │   ├── urls.py
+│   │   ├── asgi.py
+│   │   └── wsgi.py
+│   ├── api/
+│   │   ├── __init__.py
+│   │   ├── admin.py
+│   │   ├── apps.py
+│   │   ├── models/
+│   │   │   ├── __init__.py
+│   │   │   ├── attraction.py
+│   │   │   ├── event.py
+│   │   │   ├── restaurant.py
+│   │   │   ├── realestate.py
+│   │   │   └── transportation.py
+│   │   ├── serializers.py
+│   │   ├── urls.py
+│   │   └── views.py
+│   ├── scraper/
+│   │   ├── __init__.py
+│   │   ├── management/
+│   │   │   ├── __init__.py
+│   │   │   └── commands/
+│   │   │       ├── __init__.py
+│   │   │       └── scrape_data.py
+│   │   └── services/
+│   │       ├── __init__.py
+│   │       ├── attractions_scraper.py
+│   │       ├── events_scraper.py
+│   │       ├── food_scraper.py
+│   │       ├── realestate_scraper.py
+│   │       └── transportation_scraper.py
+│   ├── requirements.txt
+│   └── manage.py
+├── .gitignore
+├── LICENSE
+└── README.md
