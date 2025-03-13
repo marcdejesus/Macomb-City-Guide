@@ -67,7 +67,7 @@ export const { login, logout } = authSlice.actions;
 export const { addFavorite, removeFavorite } = favoritesSlice.actions;
 export const { setTheme } = uiSlice.actions;
 
-// Configure persist options
+// Add token storage to persist config
 const persistConfig = {
   key: 'root',
   storage,

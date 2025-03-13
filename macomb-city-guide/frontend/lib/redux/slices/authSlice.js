@@ -1,13 +1,13 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
-import api from '@/lib/api';
+import { loginUser, registerUser, getUserProfile } from '@/lib/apiModules/auth';
 
 // Async thunks
 export const login = createAsyncThunk(
   'auth/login',
-  async ({ email, password }, { rejectWithValue }) => {
+  async (credentials, { rejectWithValue }) => {
     try {
-      const response = await api.post('/auth/token/', { email, password });
-      return response.data;
+      const data = await loginUser(credentials);
+      return data;
     } catch (error) {
       return rejectWithValue(error.response?.data || 'Login failed');
     }
@@ -18,25 +18,25 @@ export const register = createAsyncThunk(
   'auth/register',
   async (userData, { rejectWithValue }) => {
     try {
-      const response = await api.post('/auth/register/', userData);
-      return response.data;
+      const data = await registerUser(userData);
+      return data;
     } catch (error) {
       return rejectWithValue(error.response?.data || 'Registration failed');
     }
   }
 );
 
-export const getUserProfile = createAsyncThunk(
-  'auth/getUserProfile',
+export const fetchUserProfile = createAsyncThunk(
+  'auth/fetchUserProfile',
   async (_, { getState, rejectWithValue }) => {
     try {
       const { auth } = getState();
       if (!auth.isAuthenticated) return null;
       
-      const response = await api.get('/auth/profile/');
-      return response.data;
+      const data = await getUserProfile();
+      return data;
     } catch (error) {
-      return rejectWithValue(error.response?.data || 'Failed to get profile');
+      return rejectWithValue(error.response?.data || 'Failed to fetch profile');
     }
   }
 );
@@ -45,6 +45,7 @@ export const getUserProfile = createAsyncThunk(
 const initialState = {
   user: null,
   token: null,
+  refreshToken: null,
   isAuthenticated: false,
   loading: false,
   error: null,
@@ -58,12 +59,16 @@ const authSlice = createSlice({
     logout: (state) => {
       state.user = null;
       state.token = null;
+      state.refreshToken = null;
       state.isAuthenticated = false;
       state.error = null;
     },
     clearError: (state) => {
       state.error = null;
     },
+    tokenRefreshed: (state, action) => {
+      state.token = action.payload.access;
+    }
   },
   extraReducers: (builder) => {
     // Login cases
@@ -75,15 +80,15 @@ const authSlice = createSlice({
       .addCase(login.fulfilled, (state, action) => {
         state.loading = false;
         state.token = action.payload.access;
+        state.refreshToken = action.payload.refresh;
         state.isAuthenticated = true;
       })
       .addCase(login.rejected, (state, action) => {
         state.loading = false;
-        state.error = action.payload;
-      });
-
+        state.error = action.payload || 'Login failed';
+      })
+      
     // Register cases
-    builder
       .addCase(register.pending, (state) => {
         state.loading = true;
         state.error = null;
@@ -93,26 +98,28 @@ const authSlice = createSlice({
       })
       .addCase(register.rejected, (state, action) => {
         state.loading = false;
-        state.error = action.payload;
-      });
-
-    // Get user profile cases
-    builder
-      .addCase(getUserProfile.pending, (state) => {
+        state.error = action.payload || 'Registration failed';
+      })
+      
+    // User profile cases
+      .addCase(fetchUserProfile.pending, (state) => {
         state.loading = true;
       })
-      .addCase(getUserProfile.fulfilled, (state, action) => {
+      .addCase(fetchUserProfile.fulfilled, (state, action) => {
         state.loading = false;
         state.user = action.payload;
       })
-      .addCase(getUserProfile.rejected, (state) => {
+      .addCase(fetchUserProfile.rejected, (state) => {
         state.loading = false;
+        state.isAuthenticated = false;
+        state.token = null;
+        state.refreshToken = null;
+        state.user = null;
       });
   },
 });
 
-// Export actions and reducer
-export const { logout, clearError } = authSlice.actions;
+export const { logout, clearError, tokenRefreshed } = authSlice.actions;
 export default authSlice.reducer;
 
 // Selectors

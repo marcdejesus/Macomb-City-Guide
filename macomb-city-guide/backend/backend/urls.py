@@ -26,9 +26,6 @@ urlpatterns = [
     path('', RedirectView.as_view(url='/api/', permanent=False)),
     
     path('admin/', admin.site.urls),
-    path('api/', include('core.urls')),
-]
-
-# Serve media files in development
-if settings.DEBUG:
-    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+    # Change from core.urls to api.urls
+    path('api/', include('api.urls')),
+] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

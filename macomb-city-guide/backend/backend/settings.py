@@ -40,16 +40,18 @@ INSTALLED_APPS = [
     
     # Third party apps
     "rest_framework",
+    "django_filters",
     "corsheaders",
     
     # Local apps
     "core",
+    "api",
 ]
 
 MIDDLEWARE = [
+    "corsheaders.middleware.CorsMiddleware",  # CORS middleware (add before CommonMiddleware)
     "django.middleware.security.SecurityMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
-    "corsheaders.middleware.CorsMiddleware",  # CORS middleware (add before CommonMiddleware)
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
@@ -57,13 +59,29 @@ MIDDLEWARE = [
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
 ]
 
+# DRF settings
+REST_FRAMEWORK = {
+    'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
+    'PAGE_SIZE': 9,
+    'DEFAULT_FILTER_BACKENDS': [
+        'django_filters.rest_framework.DjangoFilterBackend',
+    ],
+    'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
+}
+
+SPECTACULAR_SETTINGS = {
+    'TITLE': 'Macomb City Guide API',
+    'DESCRIPTION': 'API for exploring Macomb attractions, events, restaurants, and more',
+    'VERSION': '1.0.0',
+}
+
 # CORS settings
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:3000",  # Next.js frontend
 ]
 
 # For development, you can allow all origins and methods
-# CORS_ALLOW_ALL_ORIGINS = True  # Uncomment this for development only
+CORS_ALLOW_ALL_ORIGINS = True  # In production, specify specific origins
 
 ROOT_URLCONF = "backend.urls"
 

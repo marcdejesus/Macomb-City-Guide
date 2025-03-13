@@ -10,6 +10,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
 import { Calendar, Landmark, Utensils, Building, Bus, ChevronRight } from "lucide-react";
 import ClientCarouselSection from "@/components/ClientCarouselSection";
+import APIStatusCheck from '@/components/APIStatusCheck';
 
 // Import HoverCard (these should already be client components)
 import {
@@ -17,6 +18,8 @@ import {
   HoverCardContent,
   HoverCardTrigger,
 } from "@/components/ui/hover-card";
+
+import apiClient from '@/lib/api';
 
 // This would typically come from your API
 const mockFeaturedAttractions = [
@@ -128,26 +131,95 @@ const mockRestaurants = [
   },
 ];
 
-// For server components, this would be replaced with actual data fetching
+// For server components, this would use the real data fetching
 async function getCityData() {
-  // Simulate API fetch
-  return {
-    name: "Macomb",
-    state: "Michigan",
-    population: "91,663",
-    founded: 1834,
-    slogan: "Discover the heart of Macomb County",
-    heroImage: "https://images.unsplash.com/photo-1614805379000-c51d1608cce9?q=80&w=1600",
-  };
+  try {
+    const response = await fetch('http://localhost:8000/api/dashboard/stats/', {
+      cache: 'no-store',
+    });
+    
+    if (!response.ok) {
+      console.error('Failed to fetch city data');
+      return {
+        name: "Macomb",
+        state: "Michigan",
+        population: "91,663",
+        founded: 1834,
+        slogan: "Discover the heart of Macomb County",
+        heroImage: "https://images.unsplash.com/photo-1614805379000-c51d1608cce9?q=80&w=1600",
+      };
+    }
+    
+    const data = await response.json();
+    return {
+      name: "Macomb",
+      state: "Michigan",
+      population: "91,663",
+      founded: 1834,
+      slogan: "Discover the heart of Macomb County",
+      heroImage: "https://images.unsplash.com/photo-1614805379000-c51d1608cce9?q=80&w=1600",
+      // Add additional data from API if available
+      ...data,
+    };
+  } catch (error) {
+    console.error('Error fetching city data:', error);
+    // Return fallback data
+    return {
+      name: "Macomb",
+      state: "Michigan",
+      population: "91,663",
+      founded: 1834,
+      slogan: "Discover the heart of Macomb County", 
+      heroImage: "https://images.unsplash.com/photo-1614805379000-c51d1608cce9?q=80&w=1600",
+    };
+  }
+}
+
+// Add this function to fetch real data with fallback to mock data
+async function getHomePageData() {
+  try {
+    // Try to fetch real data from API
+    const [attractionsResponse, restaurantsResponse, eventsResponse] = await Promise.all([
+      fetch(`${process.env.NEXT_PUBLIC_API_URL}/attractions/?featured=true`),
+      fetch(`${process.env.NEXT_PUBLIC_API_URL}/restaurants/?featured=true`),
+      fetch(`${process.env.NEXT_PUBLIC_API_URL}/events/?featured=true`)
+    ]);
+    
+    const attractions = await attractionsResponse.json();
+    const restaurants = await restaurantsResponse.json();
+    const events = await eventsResponse.json();
+    
+    return {
+      attractions: attractions.results || [],
+      restaurants: restaurants.results || [],
+      events: events.results || []
+    };
+  } catch (error) {
+    console.error("Failed to fetch data from API:", error);
+    // Return empty arrays to use mock data as fallback
+    return {
+      attractions: [],
+      restaurants: [],
+      events: []
+    };
+  }
 }
 
 export default async function Home() {
   const cityData = await getCityData();
   
+  // Try to get real data, fall back to mock data if needed
+  const data = await getHomePageData();
+  
+  // Use real data if available, otherwise use mock data
+  const attractions = data.attractions.length > 0 ? data.attractions : mockFeaturedAttractions;
+  const restaurants = data.restaurants.length > 0 ? data.restaurants : mockRestaurants;
+  const events = data.events.length > 0 ? data.events : mockEvents;
+  
   // Prepare carousel items
   const carouselItems = [
-    ...mockFeaturedAttractions,
-    ...mockEvents
+    ...attractions,
+    ...events
   ].slice(0, 6);
 
   return (
@@ -239,7 +311,7 @@ export default async function Home() {
           <TabsContent value="attractions" className="w-full">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               <Suspense fallback={<LoadingSpinner />}>
-                {mockFeaturedAttractions.map(attraction => (
+                {attractions.map(attraction => (
                   <Card key={attraction.id} {...attraction} />
                 ))}
               </Suspense>
@@ -257,7 +329,7 @@ export default async function Home() {
           <TabsContent value="events" className="w-full">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               <Suspense fallback={<LoadingSpinner />}>
-                {mockEvents.map(event => (
+                {events.map(event => (
                   <Card key={event.id} {...event} />
                 ))}
               </Suspense>
@@ -275,7 +347,7 @@ export default async function Home() {
           <TabsContent value="dining" className="w-full">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               <Suspense fallback={<LoadingSpinner />}>
-                {mockRestaurants.map(restaurant => (
+                {restaurants.map(restaurant => (
                   <Card key={restaurant.id} {...restaurant} />
                 ))}
               </Suspense>
@@ -378,6 +450,8 @@ export default async function Home() {
           </div>
         </div>
       </section>
+
+      <APIStatusCheck />
     </div>
   );
 }

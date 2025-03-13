@@ -1,9 +1,10 @@
 from django.shortcuts import render
 from rest_framework import viewsets, permissions, filters, status
-from rest_framework.decorators import api_view, permission_classes
+from rest_framework.decorators import api_view, permission_classes, action
 from rest_framework.response import Response
 from django.shortcuts import get_object_or_404
-from datetime import date
+from django_filters.rest_framework import DjangoFilterBackend
+from datetime import date, datetime
 from .models import (
     City, Category, Attraction, EventType, Event, 
     Cuisine, Restaurant, PropertyType, Property,
@@ -15,7 +16,8 @@ from .serializers import (
     RestaurantSerializer, PropertyTypeSerializer, PropertySerializer,
     TransportTypeSerializer, TransportOptionSerializer, 
     ReviewSerializer, RSVPSerializer, SavedItemSerializer,
-    UserSerializer
+    UserSerializer, AttractionDetailSerializer, RestaurantDetailSerializer,
+    EventDetailSerializer, PropertyDetailSerializer
 )
 
 class CityViewSet(viewsets.ReadOnlyModelViewSet):
@@ -31,52 +33,21 @@ class CategoryViewSet(viewsets.ReadOnlyModelViewSet):
 class AttractionViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = Attraction.objects.all()
     serializer_class = AttractionSerializer
-    filter_backends = [filters.SearchFilter]
-    search_fields = ['name', 'description', 'category__name']
+    filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
+    filterset_fields = ['category', 'featured']
+    search_fields = ['name', 'description']
+    ordering_fields = ['name', 'rating']
     
-    def get_queryset(self):
-        queryset = Attraction.objects.all()
-        category = self.request.query_params.get('category')
-        featured = self.request.query_params.get('featured')
-        city = self.request.query_params.get('city')
-        
-        if category:
-            queryset = queryset.filter(category__name=category)
-        if featured:
-            queryset = queryset.filter(featured=True)
-        if city:
-            queryset = queryset.filter(city__name=city)
-            
-        return queryset
-
-class EventTypeViewSet(viewsets.ReadOnlyModelViewSet):
-    queryset = EventType.objects.all()
-    serializer_class = EventTypeSerializer
-
-class EventViewSet(viewsets.ReadOnlyModelViewSet):
-    queryset = Event.objects.all().order_by('date', 'time')
-    serializer_class = EventSerializer
-    filter_backends = [filters.SearchFilter]
-    search_fields = ['name', 'description', 'event_type__name']
+    def get_serializer_class(self):
+        if self.action == 'retrieve':
+            return AttractionDetailSerializer
+        return AttractionSerializer
     
-    def get_queryset(self):
-        queryset = Event.objects.all().order_by('date', 'time')
-        event_type = self.request.query_params.get('event_type')
-        featured = self.request.query_params.get('featured')
-        city = self.request.query_params.get('city')
-        upcoming = self.request.query_params.get('upcoming')
-        
-        if event_type:
-            queryset = queryset.filter(event_type__name=event_type)
-        if featured:
-            queryset = queryset.filter(featured=True)
-        if city:
-            queryset = queryset.filter(city__name=city)
-        if upcoming:
-            # Filter for upcoming events
-            queryset = queryset.filter(date__gte=date.today())
-            
-        return queryset
+    @action(detail=False, methods=['get'])
+    def featured(self, request):
+        featured = Attraction.objects.filter(featured=True)[:6]
+        serializer = self.get_serializer(featured, many=True)
+        return Response(serializer.data)
 
 class CuisineViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = Cuisine.objects.all()
@@ -85,86 +56,78 @@ class CuisineViewSet(viewsets.ReadOnlyModelViewSet):
 class RestaurantViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = Restaurant.objects.all()
     serializer_class = RestaurantSerializer
-    filter_backends = [filters.SearchFilter]
-    search_fields = ['name', 'description', 'cuisine__name']
+    filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
+    filterset_fields = ['cuisine', 'price_level', 'featured']
+    search_fields = ['name', 'description', 'address']
+    ordering_fields = ['name', 'rating', 'price_level']
     
-    def get_queryset(self):
-        queryset = Restaurant.objects.all()
-        cuisine = self.request.query_params.get('cuisine')
-        featured = self.request.query_params.get('featured')
-        city = self.request.query_params.get('city')
-        
-        if cuisine:
-            queryset = queryset.filter(cuisine__name=cuisine)
-        if featured:
-            queryset = queryset.filter(featured=True)
-        if city:
-            queryset = queryset.filter(city__name=city)
-            
-        return queryset
+    def get_serializer_class(self):
+        if self.action == 'retrieve':
+            return RestaurantDetailSerializer
+        return RestaurantSerializer
+    
+    @action(detail=False, methods=['get'])
+    def featured(self, request):
+        featured = Restaurant.objects.filter(featured=True)[:6]
+        serializer = self.get_serializer(featured, many=True)
+        return Response(serializer.data)
 
-class PropertyTypeViewSet(viewsets.ReadOnlyModelViewSet):
-    queryset = PropertyType.objects.all()
-    serializer_class = PropertyTypeSerializer
+class EventViewSet(viewsets.ReadOnlyModelViewSet):
+    queryset = Event.objects.all()
+    serializer_class = EventSerializer
+    filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
+    filterset_fields = ['event_type', 'featured', 'date']
+    search_fields = ['name', 'description', 'venue']
+    ordering_fields = ['date', 'name']
+    
+    def get_serializer_class(self):
+        if self.action == 'retrieve':
+            return EventDetailSerializer
+        return EventSerializer
+    
+    @action(detail=False, methods=['get'])
+    def featured(self, request):
+        featured = Event.objects.filter(featured=True, date__gte=datetime.today())[:6]
+        serializer = self.get_serializer(featured, many=True)
+        return Response(serializer.data)
+    
+    @action(detail=False, methods=['get'])
+    def upcoming(self, request):
+        upcoming = Event.objects.filter(date__gte=datetime.today()).order_by('date')[:10]
+        serializer = self.get_serializer(upcoming, many=True)
+        return Response(serializer.data)
 
 class PropertyViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = Property.objects.all()
     serializer_class = PropertySerializer
-    filter_backends = [filters.SearchFilter]
-    search_fields = ['title', 'description', 'property_type__name', 'address']
+    filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
+    filterset_fields = ['property_type', 'for_sale', 'bedrooms', 'bathrooms', 'featured']
+    search_fields = ['title', 'description', 'address']
+    ordering_fields = ['price', 'bedrooms', 'size']
     
-    def get_queryset(self):
-        queryset = Property.objects.all()
-        property_type = self.request.query_params.get('property_type')
-        city = self.request.query_params.get('city')
-        for_sale = self.request.query_params.get('for_sale')
-        min_price = self.request.query_params.get('min_price')
-        max_price = self.request.query_params.get('max_price')
-        bedrooms = self.request.query_params.get('bedrooms')
-        
-        if property_type:
-            queryset = queryset.filter(property_type__name=property_type)
-        if city:
-            queryset = queryset.filter(city__name=city)
-        if for_sale is not None:
-            queryset = queryset.filter(for_sale=(for_sale.lower() == 'true'))
-        if min_price:
-            queryset = queryset.filter(price__gte=min_price)
-        if max_price:
-            queryset = queryset.filter(price__lte=max_price)
-        if bedrooms:
-            queryset = queryset.filter(bedrooms__gte=bedrooms)
-            
-        return queryset
+    def get_serializer_class(self):
+        if self.action == 'retrieve':
+            return PropertyDetailSerializer
+        return PropertySerializer
+    
+    @action(detail=False, methods=['get'])
+    def featured(self, request):
+        featured = Property.objects.filter(featured=True)[:6]
+        serializer = self.get_serializer(featured, many=True)
+        return Response(serializer.data)
 
-class TransportTypeViewSet(viewsets.ReadOnlyModelViewSet):
-    queryset = TransportType.objects.all()
-    serializer_class = TransportTypeSerializer
-
-class TransportOptionViewSet(viewsets.ReadOnlyModelViewSet):
+class TransportViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = TransportOption.objects.all()
     serializer_class = TransportOptionSerializer
-    
-    def get_queryset(self):
-        queryset = TransportOption.objects.all()
-        transport_type = self.request.query_params.get('transport_type')
-        city = self.request.query_params.get('city')
-        
-        if transport_type:
-            queryset = queryset.filter(transport_type__name=transport_type)
-        if city:
-            queryset = queryset.filter(city__name=city)
-            
-        return queryset
+    filter_backends = [DjangoFilterBackend, filters.SearchFilter]
+    filterset_fields = ['transport_type']
+    search_fields = ['name', 'description']
 
-# User-related views (requires authentication)
 class ReviewViewSet(viewsets.ModelViewSet):
     queryset = Review.objects.all()
     serializer_class = ReviewSerializer
-    permission_classes = [permissions.IsAuthenticatedOrReadOnly]
-    
-    def perform_create(self, serializer):
-        serializer.save(user=self.request.user)
+    filter_backends = [DjangoFilterBackend]
+    filterset_fields = ['content_type', 'content_id']
 
 class RSVPViewSet(viewsets.ModelViewSet):
     queryset = RSVP.objects.all()
